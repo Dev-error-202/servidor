@@ -4,7 +4,6 @@
 """
 
 import os
-import sys
 import sqlite3 as sql
 from os.path import join, exists
 import platform
@@ -190,7 +189,6 @@ class BancoCore:
         :param dia: dia em numero
         :param mes: mes em numero
         :param ano: ano em numero
-        :param tabela_sql: Tabela de dados que serão colocados os valores
         :return: None
         '''
         if self.banco_conect is None:

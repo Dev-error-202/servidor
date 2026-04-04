@@ -196,8 +196,6 @@ class BancoCore:
         if self.banco_conect is None:
             raise ConnectionError('Banco não carregado')
 
-        self.table = tabela
-
         if self.banco_conect is None:
             raise ConnectionError('Banco do usuario não conectado')
 

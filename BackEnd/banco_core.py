@@ -9,7 +9,6 @@ import sqlite3 as sql
 from os.path import join, exists
 import platform
 from pandas import read_sql_query, DataFrame
-import pandas
 # from Criptografia import OpenFile
 
 
@@ -47,9 +46,10 @@ class BancoCore:
         '''CREATE TABLE entradas (
             id INTEGER PRIMARY KEY,
             tipo TEXT,
-            icone TEXT,
             valor INTEGER,
-            data INTEGER
+            dia INTEGER,
+            mes INTEGER, 
+            ano INTEGER
             )
     ''')
         cursor.execute(
@@ -70,7 +70,7 @@ class BancoCore:
         valor INTEGER,
         tipo TEXT,
         nome TEXT, 
-        dia TEXT,
+        dia INTEGER,
         meses TEXT)
         ''')
         # coloquei os meses em texto pq consigo tranformar valores de texto em numeros, mas tambem consigo deixar uma conta
@@ -111,17 +111,131 @@ class BancoCore:
         if self.banco_conect is None:
             raise ConnectionError('Banco não carregado')
 
-        if tabela_sql not in ['saidas', 'constas', 'entradas']:
+        if tabela_sql not in ['saidas', 'contas', 'entradas']:
             raise ValueError('Tabela não definida')
 
-        tabela_pandas.to_sql(self.table, con=self.banco_conect, if_exists='replace')
+        tabela_pandas.to_sql(self.table, con=self.banco_conect, if_exists='replace', index=False)
+
+    def appendUserDate(self, tabela_pandas: DataFrame, tabela_sql: str = None):
+        """
+        salva os dados ao final da tabela, isso e essencial para salvar valores o saveDateUser, e usado principalmente
+        para recriar um valor ou modificalo, indicado para um volume de dados grandes.
+
+        :param tabela_pandas: DataFrame com os dados
+        :param tabela_sql: o nome da tabela sql caso queria salvar em uma especifica
+        :return:
+                """
+
+        tabela = tabela_sql or self.table
+
+        if tabela not in ['saidas', 'contas', 'entradas']:
+            raise ValueError('Tabela não definida')
+
+        if self.banco_conect is None:
+            raise ConnectionError('Banco não carregado')
+
+        self.table = tabela
+
+        if not isinstance(tabela_pandas, DataFrame):
+            tabela_pandas = DataFrame([tabela_pandas])
+
+        tabela_pandas.to_sql(tabela, con=self.banco_conect, if_exists='append', index=False)
+        self.banco_conect.commit()
+
+    def insertSaidaDate(self,
+                       valor: int,
+                       tipo: str,
+                       comprovante: str,
+                       dia: int,
+                       mes: int,
+                       ano: int,
+                       ):
+        '''
+        Insere valores pequenos ao banco de dados.
+        :param valor: valor sem ponto flutuante da compra/entrada/conta
+        :param tipo: Tipo da compra/entrada ou saida, exp: comida, frutas, saude e etc
+        :param comprovante: Local do comprovante, assim consigo organizar e salvar os comprovantes de algo
+        :param dia: dia em numero
+        :param mes: mes em numero
+        :param ano: ano em numero
+        :return: None
+        '''
 
 
+        if self.banco_conect is None:
+            raise ConnectionError('Banco não carregado')
 
 
+        if self.banco_conect is None:
+            raise ConnectionError('Banco do usuario não conectado')
+
+        cr = self.banco_conect.cursor()
+        cr.execute(f'''
+        INSERT INTO saidas (valor, tipo, comprovante, dia, mes, ano) VALUES (?, ?, ?, ?, ?, ?)
+        ''', (valor, tipo, comprovante, dia, mes, ano))
+        self.banco_conect.commit()
 
 
+    def insertEntradaDate(self,
+                       valor: int,
+                       tipo: str,
+                       dia: int,
+                       mes: int,
+                       ano: int,
+                       ):
+        '''
+        Insere valores pequenos ao banco de dados.
+        :param valor: valor sem ponto flutuante da compra/entrada/conta
+        :param tipo: Tipo da compra/entrada ou saida, exp: comida, frutas, saude e etc
+        :param dia: dia em numero
+        :param mes: mes em numero
+        :param ano: ano em numero
+        :param tabela_sql: Tabela de dados que serão colocados os valores
+        :return: None
+        '''
+        if self.banco_conect is None:
+            raise ConnectionError('Banco não carregado')
 
+        self.table = tabela
+
+        if self.banco_conect is None:
+            raise ConnectionError('Banco do usuario não conectado')
+
+        cr = self.banco_conect.cursor()
+        cr.execute(f'''
+        INSERT INTO entradas (valor, tipo, dia, mes, ano) VALUES (?, ?, ?, ?, ?)
+        ''', (valor, tipo, dia, mes, ano))
+        self.banco_conect.commit()
+
+    def insertContasDate(self,
+                         valor: int,
+                         tipo: str,
+                         nome: str,
+                         dia: int,
+                         meses: str
+                         ):
+
+        '''
+        Insere valores pequenos ao banco de dados.
+        :param valor: valor sem ponto flutuante na tabela conta
+        :param tipo: Tipo da compra/entrada ou saida, exp: comida, frutas, saude e etc
+        :param nome: Nome atribuido a conta resultante podendo ser qualquer um
+        :param dia: Dia que a conta geralmente ocorre podendo ser qualquer um
+        :param meses: Aqui o detalhe, recebe um texto como parametro pq assim consigo por um numero normal e convertelo
+        mas tambem consigo por um parametro extra definindo a conta como fixa para aluguel, luz, agua e etc
+        :return: None
+        '''
+        if self.banco_conect is None:
+            raise ConnectionError('Banco não carregado')
+
+        if self.banco_conect is None:
+            raise ConnectionError('Banco do usuario não conectado')
+
+        cr = self.banco_conect.cursor()
+        cr.execute(f'''
+        INSERT INTO contas (valor, tipo, nome, dia, meses) VALUES (?, ?, ?, ?, ?)
+        ''', (valor, tipo, nome, dia, meses))
+        self.banco_conect.commit()
 
 
 
